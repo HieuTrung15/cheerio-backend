@@ -1,11 +1,12 @@
 const moment = require('moment');
 const cheerio = require('cheerio');
 const axios = require('axios');
+const cors = require('cors')
 
 const express = require('express');
 const bodyParser = require('body-parser');
   
-var endDate = moment().subtract(1, 'days');
+var endDate = moment().subtract(0, 'days');
 var startDate = moment().subtract(3, 'months');
 
 const dates = [];
@@ -17,14 +18,20 @@ while (startDate.isBefore(endDate)) {
 
 const app = express();
 const port = process.env.PORT || 5000;
+const corsOptions ={
+  origin:'*', 
+  credentials:true,
+  optionSuccessStatus:200,
+}
+app.use(cors(corsOptions))
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
 
 const doRequests = async (urls) =>   {
     const fetchUrl = (url) => axios.get(url);
     const promises = urls.map(fetchUrl);
 
     let responses = await Promise.all(promises);
+    
     var list_val = []
     responses.forEach((resp) => {
       const my_list = { gdb: "", g1: "", g2_0: "", g2_1: "", g3_0: "", g3_1: "", g3_2: "", g3_3: "", g3_4: "", g3_5:"",
@@ -95,11 +102,18 @@ const doRequests = async (urls) =>   {
       my_list.g7_3 = g7_3
       list_val.push(my_list);
     });
+    
     return list_val
 }
 let urls = dates.map((date) => {
     return `https://xsmn.mobi/xsmb-${date}.html`
 });
+
+let my_date = dates.map((date) => {
+  return date
+});
+
+doRequests(urls)
 
 app.get('/api/get-data', async (req, res) => {
   const data = await doRequests(urls);
