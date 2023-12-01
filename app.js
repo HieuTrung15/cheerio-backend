@@ -7,7 +7,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
   
 var endDate = moment().subtract(0, 'days');
-var startDate = moment().subtract(3, 'months');
+var startDate = moment().subtract(90, 'days');
 
 const dates = [];
 
@@ -40,15 +40,15 @@ const doRequests = async (urls) =>   {
       const $ = cheerio.load(resp.data);
       const gdb = $('.v-gdb').text().slice(-2);
       my_list.gdb=gdb;
-      // giai nhat
+
       const g1 = $('.v-g1').text().slice(-2);
       my_list.g1 = g1;
-      // giai nhi
+
       const g2_0 = $('.v-g2-0').text().slice(-2); 
       const g2_1 = $('.v-g2-1').text().slice(-2);
       my_list.g2_0 = g2_0
       my_list.g2_1 = g2_1
-      // giai ba
+
       const g3_0 = $('.v-g3-0').text().slice(-2); 
       const g3_1 = $('.v-g3-1').text().slice(-2); 
       const g3_2 = $('.v-g3-2').text().slice(-2); 
@@ -61,7 +61,7 @@ const doRequests = async (urls) =>   {
       my_list.g3_3 = g3_3
       my_list.g3_4 = g3_4
       my_list.g3_5 = g3_5
-      // giai tu
+
       const g4_0 = $('.v-g4-0').text().slice(-2);
       const g4_1 = $('.v-g4-1').text().slice(-2);
       const g4_2 = $('.v-g4-2').text().slice(-2);
@@ -70,7 +70,7 @@ const doRequests = async (urls) =>   {
       my_list.g4_1 = g4_1
       my_list.g4_2 = g4_2
       my_list.g4_3 = g4_3
-      // giai nam
+
       const g5_0 = $('.v-g5-0').text().slice(-2);
       const g5_1 = $('.v-g5-1').text().slice(-2);
       const g5_2 = $('.v-g5-2').text().slice(-2);
@@ -84,14 +84,13 @@ const doRequests = async (urls) =>   {
       my_list.g5_4 = g5_4
       my_list.g5_5 = g5_5
 
-      // giai sau
       const g6_0 = $('.v-g6-0').text().slice(-2);
       const g6_1 = $('.v-g6-1').text().slice(-2);
       const g6_2 = $('.v-g6-2').text().slice(-2);
       my_list.g6_0 = g6_0
       my_list.g6_1 = g6_1
       my_list.g6_2 = g6_2
-      // giai bay
+
       const g7_0 = $('.v-g7-0').text();
       const g7_1 = $('.v-g7-1').text();
       const g7_2 = $('.v-g7-2').text();
@@ -104,7 +103,41 @@ const doRequests = async (urls) =>   {
     });
     
     return list_val
-}
+};
+
+const getGdb = async (urls) =>   {
+  const fetchUrl = (url) => axios.get(url);
+  const promises = urls.map(fetchUrl);
+
+  let responses = await Promise.all(promises);
+  var list_val = []
+  
+  responses.forEach((resp) => {
+    const my_list = { gdb: "", date: ""};
+    const $ = cheerio.load(resp.data);
+    const gdb = $('.v-gdb').text().slice(-2);
+    // lấy ra url của ngày
+    const url_date = $('.vietlott-link:last').attr('href');
+    var urlObject = new URL(url_date);
+    // Lấy phần pathName từ URL
+    var pathName = urlObject.pathname;
+    // Sử dụng biểu thức chính quy để trích xuất ngày
+    var dateRegex = /(\d{1,2}-\d{1,2}-\d{4})/;
+    var match = pathName.match(dateRegex);
+    if (match) {
+      var extractedDate = match[0];
+      my_list.date = extractedDate;
+    } else {
+        console.log("Không tìm thấy ngày trong URL");
+    }
+    my_list.gdb=gdb;
+    
+    list_val.push(my_list);
+  });
+  
+  return list_val
+};
+
 let urls = dates.map((date) => {
     return `https://xsmn.mobi/xsmb-${date}.html`
 });
@@ -113,10 +146,15 @@ let my_date = dates.map((date) => {
   return date
 });
 
-doRequests(urls)
+// doRequests(urls);
+// app.get('/api/get-data', async (req, res) => {
+//   const data = await doRequests(urls);
+//   res.json({data});
+// });
 
-app.get('/api/get-data', async (req, res) => {
-  const data = await doRequests(urls);
+getGdb(urls);
+app.get('/api/get-gdb', async (req, res) => {
+  const data = await getGdb(urls);
   res.json({data});
 });
 
